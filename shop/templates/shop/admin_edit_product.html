@@ -1,0 +1,336 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Edit Product | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    .edit-panel {
+        padding: 30px;
+    }
+    
+    /* Drag & Drop zone styling */
+    .upload-dropzone {
+        border: 2px dashed rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.01);
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 110px;
+        height: 100%;
+    }
+    
+    .upload-dropzone:hover, .upload-dropzone.dragover {
+        border-color: var(--primary);
+        background: rgba(242, 168, 76, 0.03);
+    }
+    
+    .upload-icon {
+        color: var(--text-muted);
+        transition: var(--transition-smooth);
+    }
+    
+    .upload-dropzone:hover .upload-icon {
+        color: var(--primary);
+        transform: translateY(-2px);
+    }
+    
+    .upload-text {
+        color: var(--text-main);
+        font-weight: 500;
+    }
+    
+    .upload-text span {
+        color: var(--primary);
+        text-decoration: underline;
+    }
+    
+    .preview-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+    
+    .preview-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .remove-preview-btn {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(231, 76, 60, 0.85);
+        color: #ffffff;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        z-index: 20;
+    }
+    
+    .remove-preview-btn:hover {
+        background: #e74c3c;
+        transform: scale(1.1);
+    }
+
+    /* Checkbox slider styling */
+    .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 24px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.1);
+        transition: .4s;
+        border-radius: 24px;
+        border: 1px solid var(--border-color);
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+
+    /* Status indicator colors */
+    .status-indicator.status-active {
+        color: #2ecc71;
+    }
+    .status-indicator.status-inactive {
+        color: #e74c3c;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+        <a href="{% url 'admin_dashboard' %}" style="color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; transition: var(--transition-smooth);" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+            <span class="material-icons">arrow_back</span> Back to Workspace
+        </a>
+    </div>
+
+    <div class="edit-panel glass-panel">
+        <h2 style="border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:24px; color:#ffffff; font-family: var(--font-heading);">
+            Edit Product Details
+        </h2>
+        
+        <form action="{% url 'admin_edit_product' product.id %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label class="form-label" for="prod_name">Product Name</label>
+                    <input type="text" name="name" id="prod_name" class="form-input" value="{{ product.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="prod_price">Price (INR)</label>
+                    <input type="number" step="0.01" name="price" id="prod_price" class="form-input" value="{{ product.price }}" required>
+                </div>
+            </div>
+            
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label class="form-label" for="prod_cat">Category Tab</label>
+                    <select name="category" id="prod_cat" class="form-input" required style="height: 48px; border-radius: 12px; background: rgba(255, 255, 255, 0.03);">
+                        {% for val, name in categories %}
+                            <option value="{{ val }}" {% if product.category == val %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Replace Product Photo</label>
+                    <div class="upload-dropzone" id="dropzone-area" onclick="document.getElementById('prod_img').click()">
+                        <span class="material-icons upload-icon" style="font-size:32px;">cloud_upload</span>
+                        <p class="upload-text" style="font-size:12px; margin:0;">Drag new image or <span>choose</span></p>
+                        <div class="preview-container" id="image-preview-container">
+                            <img id="image-preview" src="{{ product.image.url }}" alt="Preview">
+                            <button type="button" class="remove-preview-btn" onclick="removeImagePreview(event)">
+                                <span class="material-icons" style="font-size: 16px;">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" name="image" id="prod_img" style="display:none;" accept="image/*">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Availability / Status</label>
+                <div class="checkbox-container">
+                    <label class="switch">
+                        <input type="checkbox" name="available" id="prod_avail" {% if product.available %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                    <span id="avail-status-text" class="status-indicator {% if product.available %}status-active{% else %}status-inactive{% endif %}" style="font-size: 14px; font-weight: 500;">
+                        {% if product.available %}Available in Storefront{% else %}Hidden / Unavailable{% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <label class="form-label" for="prod_desc">Description Details</label>
+                <textarea name="description" id="prod_desc" class="form-input" rows="4" required>{{ product.description }}</textarea>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 24px;">
+                <button type="submit" class="glow-btn" style="flex: 1; padding: 14px;">
+                    <span class="material-icons">save</span> Update Product Details
+                </button>
+                <a href="{% url 'admin_dashboard' %}" class="glow-btn-secondary" style="padding: 14px 20px; border-radius: 12px; text-decoration: none; text-align: center; color: var(--text-muted); border: 1px solid var(--border-color); background: transparent; transition: var(--transition-smooth);" onmouseover="this.style.borderColor='var(--text-muted)'; this.style.color='#fff';" onmouseout="this.style.borderColor='var(--border-color)'; this.style.color='var(--text-muted)';">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropzone = document.getElementById('dropzone-area');
+        const fileInput = document.getElementById('prod_img');
+        const previewContainer = document.getElementById('image-preview-container');
+        const previewImg = document.getElementById('image-preview');
+        const availCheckbox = document.getElementById('prod_avail');
+        const availStatusText = document.getElementById('avail-status-text');
+
+        // Availability text update
+        if (availCheckbox && availStatusText) {
+            availCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    availStatusText.textContent = "Available in Storefront";
+                    availStatusText.classList.remove('status-inactive');
+                    availStatusText.classList.add('status-active');
+                } else {
+                    availStatusText.textContent = "Hidden / Unavailable";
+                    availStatusText.classList.remove('status-active');
+                    availStatusText.classList.add('status-inactive');
+                }
+            });
+        }
+
+        if (dropzone && fileInput) {
+            // Drag events
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+
+            // Drop file
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFilePreview(files[0]);
+                }
+            }, false);
+
+            // File input changed
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    handleFilePreview(this.files[0]);
+                }
+            });
+        }
+
+        function handleFilePreview(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewContainer.style.display = 'flex';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+
+    function removeImagePreview(event) {
+        event.stopPropagation();
+        const fileInput = document.getElementById('prod_img');
+        const previewContainer = document.getElementById('image-preview-container');
+        const previewImg = document.getElementById('image-preview');
+        
+        if (fileInput) fileInput.value = '';
+        if (previewImg) previewImg.src = '';
+        if (previewContainer) previewContainer.style.display = 'none';
+    }
+</script>
+{% endblock %}
