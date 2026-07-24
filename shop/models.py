@@ -99,7 +99,7 @@ class Order(models.Model):
     razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
     
     # UPI details
-    payment_method = models.CharField(max_length=20, default='Razorpay')
+    payment_method = models.CharField(max_length=20, default='UPI')
     upi_transaction_id = models.CharField(max_length=50, blank=True, null=True)
     
     # Customizations for the whole order
