@@ -706,4 +706,52 @@ def admin_get_messages_api(request, user_id):
          })
     return JsonResponse({'messages': data})
 
+@staff_member_required
+def admin_edit_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        category = request.POST.get('category')
+        image = request.FILES.get('image')
+        available = request.POST.get('available') == 'on'
+        
+        if name and price:
+            if image:
+                is_valid, err_msg = validate_uploaded_file(image, ['.jpg', '.jpeg', '.png', '.gif', '.webp'], 5)
+                if not is_valid:
+                    messages.error(request, err_msg)
+                    return render(request, 'shop/admin_edit_product.html', {
+                        'product': product,
+                        'categories': Product.CATEGORY_CHOICES
+                    })
+                product.image = image
+            
+            product.name = name
+            product.description = description
+            product.price = price
+            product.category = category
+            product.available = available
+            product.save()
+            messages.success(request, f"Product '{name}' successfully updated.")
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, "Name and Price are required fields.")
+            
+    return render(request, 'shop/admin_edit_product.html', {
+        'product': product,
+        'categories': Product.CATEGORY_CHOICES
+    })
+
+@staff_member_required
+def admin_delete_product(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=product_id)
+        product_name = product.name
+        product.delete()
+        messages.success(request, f"Product '{product_name}' has been deleted successfully.")
+    return redirect('admin_dashboard')
+
+
 
