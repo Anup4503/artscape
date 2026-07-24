@@ -37,4 +37,6 @@ urlpatterns = [
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/chat/<int:user_id>/', views.admin_chat_thread, name='admin_chat_thread'),
     path('admin-dashboard/chat/<int:user_id>/get-messages/', views.admin_get_messages_api, name='admin_get_messages_api'),
+    path('admin-dashboard/product/edit/<int:product_id>/', views.admin_edit_product, name='admin_edit_product'),
+    path('admin-dashboard/product/delete/<int:product_id>/', views.admin_delete_product, name='admin_delete_product'),
 ]
