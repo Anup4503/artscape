@@ -1,0 +1,49 @@
+﻿.venv\Scripts\pytho
+n.exe : Creating 
+test database for 
+alias 'default'...
+At line:1 char:1
++ .venv\Scripts\pyt
+hon.exe manage.py 
+test shop > 
+test_run_err.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo 
+             : No  
+  tSpecified: (C   
+ reating test d    
+...as 'default    
+'...:String) [    
+], RemoteExcep    
+tion
+    + FullyQualifi 
+   edErrorId : Na  
+  tiveCommandErr   
+ or
+ 
+
+...........
+-------------------
+-------------------
+-------------------
+-------------
+Ran 11 tests in 
+21.323s
+
+OK
+Destroying test 
+database for alias 
+'default'...
+
+Found 11 test(s).
+System check identified no issues (0 silenced).
+
+=========================================
+[SMS SIMULATION] Dispatching to 12345:
+Your payment of INR 100.00 for Order #1 has been validated! We are starting work on your order.
+=========================================
+

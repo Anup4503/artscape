@@ -1,0 +1,316 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}My Orders | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .orders-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .order-card {
+        padding: 24px;
+        margin-bottom: 24px;
+        border-radius: 16px;
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 14px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .order-id {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 18px;
+        color: #ffffff;
+    }
+    
+    .order-date {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .order-items {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .order-item-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+    }
+    
+    .order-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        background: rgba(255,255,255,0.02);
+        padding: 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 20px;
+    }
+    
+    .meta-item label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+    }
+    
+    .meta-item span {
+        font-size: 14px;
+        color: #ffffff;
+        font-weight: 500;
+    }
+    
+    /* Progress steps */
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        margin: 24px 0;
+        position: relative;
+    }
+    
+    .progress-steps::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--border-color);
+        z-index: 1;
+    }
+    
+    .progress-line {
+        position: absolute;
+        top: 15px;
+        left: 0;
+        height: 3px;
+        background: var(--primary);
+        z-index: 2;
+        transition: width 0.4s ease;
+    }
+    
+    .step-node {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 60px;
+    }
+    
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bg-dark);
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition-smooth);
+    }
+    
+    .step-circle span {
+        font-size: 16px;
+        color: var(--text-muted);
+    }
+    
+    .step-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-top: 8px;
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .step-node.active .step-circle {
+        border-color: var(--primary);
+        background: var(--primary);
+        box-shadow: 0 0 10px rgba(242,168,76,0.3);
+    }
+    
+    .step-node.active .step-circle span {
+        color: #0f1319;
+    }
+    
+    .step-node.active .step-label {
+        color: var(--primary);
+        font-weight: 700;
+    }
+    
+    .step-node.completed .step-circle {
+        border-color: var(--secondary);
+        background: var(--secondary);
+    }
+    
+    .step-node.completed .step-circle span {
+        color: #0f1319;
+    }
+    
+    .step-node.completed .step-label {
+        color: var(--secondary);
+    }
+    
+    .action-btn-row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="orders-container">
+    <h1 class="page-title">My Purchase History</h1>
+    
+    <!-- Verified Notifications Alert Box -->
+    {% if notifications %}
+        <div style="margin-bottom: 30px;">
+            {% for n in notifications %}
+                <div style="background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.25); border-radius: 12px; padding: 16px 20px; color:#2ecc71; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="material-icons">notifications_active</span>
+                        <span style="font-size:14px;">{{ n.message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    {% if orders %}
+        {% for order in orders %}
+            <div class="order-card glass-panel" id="order-card-{{ order.id }}">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">Order #{{ order.id }}</div>
+                        <div class="order-date">Placed: {{ order.created_at|date:"d M Y, H:i" }}</div>
+                    </div>
+                    <div>
+                        <span class="status-badge {% if order.payment_status == 'Paid' %}status-paid{% else %}status-pending{% endif %}">
+                            Payment: {{ order.payment_status }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="order-items">
+                    {% for item in order.items.all %}
+                        <div class="order-item-row">
+                            <span style="color:#ffffff; font-weight:500;">{{ item.quantity }} x {{ item.name }}</span>
+                            <span style="color:var(--text-sub);">₹{{ item.get_total_price }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="order-meta-grid">
+                    <div class="meta-item">
+                        <label>Delivery Address</label>
+                        <span>{{ order.address }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <label>Payment Method</label>
+                        <span>{{ order.payment_method }}{% if order.upi_transaction_id %} (UTR: {{ order.upi_transaction_id }}){% endif %}</span>
+                    </div>
+                    <div class="meta-item" style="text-align:right;">
+                        <label>Total Amount Paid</label>
+                        <span style="color:var(--primary); font-size:16px; font-weight:700;">₹{{ order.total_amount }}</span>
+                    </div>
+                </div>
+                
+                <!-- If not cancelled, show steps -->
+                {% if order.status != 'Cancelled' %}
+                    <h4 style="font-size:13px; color:var(--text-sub); text-transform:uppercase; margin-bottom:12px;">Processing Stages</h4>
+                    
+                    <div class="progress-steps">
+                        <!-- Progress bar logic -->
+                        {% with status=order.status %}
+                        <div class="progress-line" style="width: {% if status == 'Pending' %}0%{% elif status == 'Processing' %}25%{% elif status == 'Completed' %}50%{% elif status == 'Shipped' %}75%{% elif status == 'Delivered' %}100%{% endif %};"></div>
+                        
+                        <div class="step-node {% if status == 'Pending' %}active{% else %}completed{% endif %}">
+                            <div class="step-circle">
+                                <span class="material-icons">receipt</span>
+                            </div>
+                            <div class="step-label">Ordered</div>
+                        </div>
+                        
+                        <div class="step-node {% if status == 'Processing' %}active{% elif status == 'Completed' or status == 'Shipped' or status == 'Delivered' %}completed{% endif %}">
+                            <div class="step-circle">
+                                <span class="material-icons">engineering</span>
+                            </div>
+                            <div class="step-label">In Preparation</div>
+                        </div>
+                        
+                        <div class="step-node {% if status == 'Completed' %}active{% elif status == 'Shipped' or status == 'Delivered' %}completed{% endif %}">
+                            <div class="step-circle">
+                                <span class="material-icons">architecture</span>
+                            </div>
+                            <div class="step-label">Prepared</div>
+                        </div>
+                        
+                        <div class="step-node {% if status == 'Shipped' %}active{% elif status == 'Delivered' %}completed{% endif %}">
+                            <div class="step-circle">
+                                <span class="material-icons">local_shipping</span>
+                            </div>
+                            <div class="step-label">Shipped</div>
+                        </div>
+                        
+                        <div class="step-node {% if status == 'Delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <span class="material-icons">verified_user</span>
+                            </div>
+                            <div class="step-label">Delivered</div>
+                        </div>
+                        {% endwith %}
+                    </div>
+                {% else %}
+                    <div style="background: rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.2); padding:12px; border-radius:8px; color:#e74c3c; font-size:13px; text-align:center; font-weight:600; margin-bottom:20px;">
+                        This order has been Cancelled.
+                    </div>
+                {% endif %}
+                
+                <div class="action-btn-row">
+                    <!-- Invoice Download -->
+                    <a href="{% url 'invoice_view' order.id %}" target="_blank" class="glow-btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+                        <span class="material-icons" style="font-size:16px; vertical-align:middle; margin-right:4px;">print</span> Print Bill / Invoice
+                    </a>
+                    
+                    <!-- Cancel Button (Only if Pending status) -->
+                    {% if order.status == 'Pending' %}
+                        <form action="{% url 'cancel_order' order.id %}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this order?');" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="glow-btn" style="background:#e74c3c; color:#ffffff; padding: 8px 16px; font-size:13px; box-shadow:none;">
+                                <span class="material-icons" style="font-size:16px; vertical-align:middle; margin-right:4px;">cancel</span> Cancel Order
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="glass-panel" style="padding: 40px; text-align:center;">
+            <span class="material-icons" style="font-size: 48px; color:var(--text-muted); margin-bottom:12px;">shopping_basket</span>
+            <h3>No Orders Placed</h3>
+            <p style="color:var(--text-sub); font-size:14px; margin-top:8px;">You haven't ordered any custom resin or art items yet. Start browsing now.</p>
+            <a href="{% url 'home' %}" class="glow-btn" style="margin-top:20px;">Explore Storefront</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

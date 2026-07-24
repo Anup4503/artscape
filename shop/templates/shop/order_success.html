@@ -1,0 +1,140 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Order Confirmed | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-box {
+        max-width: 650px;
+        margin: 40px auto;
+        padding: 45px;
+        text-align: center;
+    }
+    
+    .success-badge {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        border: 1px solid rgba(46, 204, 113, 0.3);
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.1);
+    }
+    
+    .success-badge .material-icons {
+        font-size: 40px;
+    }
+    
+    .details-box {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        margin: 30px 0;
+        text-align: left;
+    }
+    
+    .detail-row-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 14px;
+    }
+    .detail-row-item span:first-child {
+        color: var(--text-sub);
+    }
+    .detail-row-item span:last-child {
+        color: #ffffff;
+        font-weight: 500;
+    }
+    
+    .customization-summary {
+        background: rgba(15, 19, 25, 0.6);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-box glass-panel">
+    <div class="success-badge">
+        <span class="material-icons">check_circle</span>
+    </div>
+    
+    {% if order.payment_status == 'Paid' %}
+        <h1 style="color: #ffffff; font-size:30px;">Payment Verified Successfully!</h1>
+        <p style="color: var(--text-sub); margin-top:8px; font-size:15px;">Thank you for shopping. We have received your creative specifications.</p>
+    {% else %}
+        <h1 style="color: #ffffff; font-size:30px;">Payment Submitted!</h1>
+        <p style="color: var(--text-sub); margin-top:8px; font-size:15px;">Thank you. Your order specifications have been received. We are verifying your UPI transaction.</p>
+    {% endif %}
+    
+    <div class="details-box">
+        <h4 style="border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-bottom:12px; color:#ffffff;">Order Details</h4>
+        <div class="detail-row-item">
+            <span>Order Number</span>
+            <span>#{{ order.id }}</span>
+        </div>
+        <div class="detail-row-item">
+            <span>Payment Status</span>
+            {% if order.payment_status == 'Paid' %}
+                <span style="color:#2ecc71; font-weight:700;">PAID</span>
+            {% else %}
+                <span style="color:#f1c40f; font-weight:700;">PENDING VERIFICATION</span>
+            {% endif %}
+        </div>
+        {% if order.payment_method == 'UPI' and order.upi_transaction_id %}
+        <div class="detail-row-item">
+            <span>UPI Reference (UTR)</span>
+            <span style="font-family: monospace; font-weight: 600; color: var(--primary);">{{ order.upi_transaction_id }}</span>
+        </div>
+        {% endif %}
+        <div class="detail-row-item">
+            <span>Total Transacted</span>
+            <span style="color:var(--primary); font-weight:700;">₹{{ order.total_amount }}</span>
+        </div>
+        <div class="detail-row-item">
+            <span>Shipping Recipient</span>
+            <span>{{ order.name }}</span>
+        </div>
+        <div class="detail-row-item">
+            <span>Contact Mobile</span>
+            <span>{{ order.phone }}</span>
+        </div>
+        
+        <!-- Custom Specs Playback and text summary -->
+        {% if order.custom_text or order.custom_voice %}
+            <div class="customization-summary">
+                <h5 style="color: var(--primary); margin-bottom:8px; font-size: 13px;">Your Custom Requests:</h5>
+                {% if order.custom_text %}
+                    <p style="font-size:13px; color:var(--text-sub); font-style:italic; margin-bottom:12px;">"{{ order.custom_text }}"</p>
+                {% endif %}
+                
+                {% if order.custom_voice %}
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <span style="font-size:11px; color:var(--text-muted);">Recorded Custom Voice Instructions:</span>
+                        <audio src="{{ order.custom_voice.url }}" controls style="height:35px; width: 100%;"></audio>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <a href="{% url 'chat' %}" class="glow-btn" style="padding:12px 24px;">
+            <span class="material-icons" style="font-size:18px;">chat</span> Discuss in Custom Chat
+        </a>
+        <a href="{% url 'home' %}" class="glow-btn-secondary" style="padding:12px 24px;">
+            Continue Shopping Catalog
+        </a>
+    </div>
+</div>
+{% endblock %}

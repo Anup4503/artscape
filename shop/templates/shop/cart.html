@@ -1,0 +1,303 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Your Cart | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 40px;
+        align-items: start;
+        margin-top: 20px;
+    }
+    
+    @media (max-width: 900px) {
+        .cart-grid {
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+    }
+    
+    .cart-table-panel {
+        padding: 30px;
+    }
+    
+    .cart-item-row {
+        display: flex;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border-color);
+        gap: 20px;
+    }
+    
+    .cart-item-row:last-child {
+        border-bottom: none;
+    }
+    
+    .img-th {
+        width: 90px;
+        height: 90px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #121720;
+        border: 1px solid var(--border-color);
+    }
+    
+    .img-th img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .cart-item-details {
+        flex-grow: 1;
+    }
+    
+    .item-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 4px;
+    }
+    
+    .item-category {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+    
+    .item-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .remove-link {
+        font-size: 13px;
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 500;
+    }
+    
+    .remove-link:hover {
+        text-decoration: underline;
+    }
+    
+    .row-qty {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2px;
+        max-width: 120px;
+    }
+    
+    .row-qty-btn {
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .row-qty-btn:hover {
+        background: var(--primary);
+        color: #0f1319;
+    }
+    
+    .row-qty-input {
+        width: 40px;
+        text-align: center;
+        background: transparent;
+        border: none;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .item-subtotal {
+        width: 110px;
+        font-size: 18px;
+        font-weight: 700;
+        text-align: right;
+        color: #ffffff;
+        font-family: var(--font-heading);
+    }
+    
+    /* Summary card */
+    .summary-card {
+        padding: 30px;
+    }
+    
+    .summary-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 12px;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: var(--text-sub);
+    }
+    
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 24px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 18px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        font-family: var(--font-heading);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Shopping Cart</h1>
+
+{% if cart_items %}
+    <div class="cart-grid">
+        <!-- Cart Items List Panel -->
+        <div class="cart-table-panel glass-panel">
+            {% for item in cart_items %}
+                <div class="cart-item-row" id="cart-item-row-{{ item.id }}">
+                    <!-- Image -->
+                    <div class="img-th">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                        {% else %}
+                            <img src="https://images.unsplash.com/photo-1549887534-1541e9326642?q=80&w=600&auto=format&fit=crop" alt="Fallback art asset">
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Details -->
+                    <div class="cart-item-details">
+                        <div class="item-category">{{ item.product.get_category_display }}</div>
+                        <h3 class="item-title">{{ item.product.name }}</h3>
+                        <div class="item-actions">
+                            <div class="row-qty">
+                                <button type="button" class="row-qty-btn minus-qty" data-id="{{ item.id }}">-</button>
+                                <input type="number" class="row-qty-input" id="row-qty-{{ item.id }}" value="{{ item.quantity }}" readonly>
+                                <button type="button" class="row-qty-btn plus-qty" data-id="{{ item.id }}">+</button>
+                            </div>
+                            <a href="{% url 'remove_from_cart' item.id %}" class="remove-link">
+                                <span class="material-icons" style="font-size:16px;">delete</span> Remove
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Subtotal price -->
+                    <div class="item-subtotal" id="item-subtotal-{{ item.id }}">
+                        ₹{{ item.get_total_price }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Summary Panel -->
+        <div class="summary-card glass-panel">
+            <h3 class="summary-title">Order Summary</h3>
+            <div class="summary-row">
+                <span>Subtotal Items</span>
+                <span id="subtotal-items">{{ cart_items.count }}</span>
+            </div>
+            <div class="summary-row">
+                <span>Shipping</span>
+                <span style="color: #2ecc71; font-weight:600;">FREE</span>
+            </div>
+            
+            <div class="summary-total">
+                <span>Total Amount:</span>
+                <span id="cart-total">₹{{ total_amount }}</span>
+            </div>
+            
+            <a href="{% url 'checkout' %}" class="glow-btn" style="width: 100%; margin-top: 30px; padding: 14px;">
+                Proceed to Checkout <span class="material-icons">arrow_forward</span>
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="glass-panel" style="padding: 60px; text-align: center;">
+        <span class="material-icons" style="font-size: 64px; color: var(--text-muted); margin-bottom: 20px;">shopping_basket</span>
+        <h3 style="margin-bottom: 8px;">Your Cart is Empty</h3>
+        <p style="color: var(--text-sub); margin-bottom: 24px;">Browse our collection of custom handmade graphics and crafts to add beautiful objects here.</p>
+        <a href="{% url 'home' %}" class="glow-btn">Return to Store</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // AJAX quantity updates
+        document.querySelectorAll('.minus-qty').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemId = this.dataset.id;
+                const input = document.getElementById('row-qty-' + itemId);
+                let val = parseInt(input.value) || 1;
+                if (val > 1) {
+                    updateQuantity(itemId, val - 1);
+                }
+            });
+        });
+
+        document.querySelectorAll('.plus-qty').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemId = this.dataset.id;
+                const input = document.getElementById('row-qty-' + itemId);
+                let val = parseInt(input.value) || 1;
+                updateQuantity(itemId, val + 1);
+            });
+        });
+
+        function updateQuantity(itemId, newQty) {
+            const csrfToken = '{{ csrf_token }}';
+            
+            fetch('/cart/update/' + itemId + '/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: 'quantity=' + newQty
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.item_removed) {
+                        document.getElementById('cart-item-row-' + itemId).remove();
+                        location.reload(); // Reload to update totals/count properly if empty
+                    } else {
+                        // Update inputs and prices on page
+                        document.getElementById('row-qty-' + itemId).value = newQty;
+                        document.getElementById('item-subtotal-' + itemId).innerText = '₹' + data.item_total;
+                        
+                        // Let's reload cart summary dynamically by re-summing or simple page reload.
+                        // For a clean seamless experience, reload works or we can just fetch and calculate
+                        location.reload();
+                    }
+                }
+            })
+            .catch(err => console.error("Error updating cart quantity:", err));
+        }
+    });
+</script>
+{% endblock %}

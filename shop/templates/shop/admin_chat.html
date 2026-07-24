@@ -1,0 +1,350 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Chat with {{ customer.username }} | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-layout {
+        max-width: 800px;
+        margin: 0 auto;
+        height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(15, 19, 25, 0.5);
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .chat-messages-box {
+        flex-grow: 1;
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: rgba(10, 14, 20, 0.4);
+    }
+    
+    .msg-bubble {
+        max-width: 70%;
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 14px;
+        line-height: 1.5;
+        position: relative;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    
+    .msg-sent {
+        align-self: flex-end;
+        background: var(--primary);
+        color: #0f1319;
+        border-bottom-right-radius: 4px;
+        text-align: right;
+    }
+    
+    .msg-sent .msg-meta {
+        color: rgba(15, 19, 25, 0.6);
+    }
+    
+    .msg-received {
+        align-self: flex-start;
+        background: var(--bg-card);
+        color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-bottom-left-radius: 4px;
+    }
+    
+    .msg-received .msg-meta {
+        color: var(--text-muted);
+    }
+    
+    .msg-meta {
+        font-size: 10px;
+        margin-top: 6px;
+        display: block;
+    }
+    
+    .chat-footer {
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        background: rgba(15, 19, 25, 0.5);
+        border-radius: 0 0 16px 16px;
+    }
+    
+    .chat-form-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--text-sub); margin-bottom: 24px; font-size:14px;">
+    <span class="material-icons" style="font-size: 16px;">arrow_back</span> Back to Admin Dashboard
+</a>
+
+<div class="chat-layout glass-panel">
+    <!-- Header -->
+    <div class="chat-header">
+        <div>
+            <h4 style="color:#ffffff;">Responding to: {{ customer.username }}</h4>
+            <p style="font-size:11px; color:var(--text-sub);">Email: {{ customer.email }}</p>
+        </div>
+        <button onclick="location.reload()" class="glow-btn-secondary" style="padding: 6px 12px; font-size:12px; border-radius:8px;">
+            <span class="material-icons" style="font-size:14px; vertical-align:middle;">refresh</span> Refresh Thread
+        </button>
+    </div>
+    
+    <!-- Message view -->
+    <div class="chat-messages-box" id="chat-messages-box">
+        {% if chat_messages %}
+            {% for msg in chat_messages %}
+                <div class="msg-bubble {% if msg.sender.is_staff %}msg-sent{% else %}msg-received{% endif %}">
+                    {% if msg.content %}
+                        <p style="margin: 0; text-align: left;">{{ msg.content }}</p>
+                    {% endif %}
+                    
+                    {% if msg.voice_note %}
+                        <div style="margin: 8px 0 4px 0; text-align: left;">
+                            <span style="font-size:10px; opacity: 0.8; display:block; margin-bottom:4px;">Voice Recording:</span>
+                            <audio src="{{ msg.voice_note.url }}" controls style="height:30px; width:220px; max-width:100%;"></audio>
+                        </div>
+                    {% endif %}
+                    
+                    {% if msg.attachment %}
+                        <div style="margin: 8px 0 4px 0; text-align: left;">
+                            <a href="{{ msg.attachment.url }}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; text-decoration:underline; font-weight:500;">
+                                <span class="material-icons" style="font-size:16px;">attach_file</span> View Attachment Reference
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    <span class="msg-meta">{{ msg.created_at|date:"d M, H:i" }}</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="margin:auto; color:var(--text-muted);">No messages in thread yet.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Footer Inputs Box -->
+    <div class="chat-footer">
+        <form action="{% url 'admin_chat_thread' customer.id %}" method="POST" enctype="multipart/form-data" id="chat-form">
+            {% csrf_token %}
+            
+            <div class="chat-form-row">
+                <!-- Text input -->
+                <div style="flex-grow:1; display:flex; flex-direction:column; gap:8px;">
+                    <textarea name="content" id="chat-text-input" class="form-input" rows="1" placeholder="Type message to {{ customer.username }}..." style="resize:none; border-radius:24px; padding:12px 20px;"></textarea>
+                </div>
+                
+                <!-- Mic / File indicators widget -->
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <!-- Microphone Toggle Button -->
+                    <button type="button" class="row-qty-btn" id="chat-mic-btn" style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.05); color:#ffffff; cursor:pointer;" title="Record Voice">
+                        <span class="material-icons" id="chat-mic-icon">mic</span>
+                    </button>
+                    
+                    <!-- Paperclip attachment file clicker -->
+                    <button type="button" class="row-qty-btn" onclick="document.getElementById('chat-file-input').click()" style="width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.05); color:#ffffff; cursor:pointer;" title="Attach File">
+                        <span class="material-icons">attach_file</span>
+                        <input type="file" name="attachment" id="chat-file-input" style="display:none;" onchange="updateFileIndicator(this)">
+                    </button>
+                    
+                    <!-- Submission Send button -->
+                    <button type="submit" class="glow-btn" style="width:40px; height:40px; border-radius:50%; padding:0; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-icons" style="margin-left: 2px;">send</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Hidden Audio upload -->
+            <input type="file" name="voice_note" id="chat-voice-file-input" style="display:none;" accept="audio/*">
+            
+            <!-- Dynamic dynamic attachments status indicators bar -->
+            <div style="display:none; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid var(--border-color);" id="chat-uploads-indicator">
+                <span style="font-size:12px; color:var(--primary); font-weight:500;" id="chat-uploads-text">Files Attached</span>
+                <span class="material-icons" style="font-size:16px; color:var(--accent); cursor:pointer;" onclick="clearChatUploads()">cancel</span>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const messagesBox = document.getElementById('chat-messages-box');
+    let messageCount = 0;
+    
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+    
+    function fetchMessages() {
+        fetch("{% url 'admin_get_messages_api' customer.id %}")
+        .then(response => response.json())
+        .then(data => {
+            const messages = data.messages;
+            if (messages.length !== messageCount) {
+                messageCount = messages.length;
+                renderMessages(messages);
+            }
+        })
+        .catch(err => console.error("Error fetching messages:", err));
+    }
+    
+    function renderMessages(messages) {
+        if (messages.length === 0) {
+            messagesBox.innerHTML = '<p style="margin:auto; color:var(--text-muted);">No messages in thread yet.</p>';
+            return;
+        }
+        
+        let html = '';
+        messages.forEach(msg => {
+            const bubbleClass = msg.is_staff ? 'msg-sent' : 'msg-received';
+            
+            let bubbleHtml = `<div class="msg-bubble ${bubbleClass}">`;
+            if (msg.content) {
+                bubbleHtml += `<p style="margin: 0; text-align: left;">${escapeHTML(msg.content)}</p>`;
+            }
+            if (msg.voice_note) {
+                bubbleHtml += `
+                    <div style="margin: 8px 0 4px 0; text-align: left;">
+                        <span style="font-size:10px; opacity: 0.8; display:block; margin-bottom:4px;">Voice Recording:</span>
+                        <audio src="${msg.voice_note}" controls style="height:30px; width:220px; max-width:100%;"></audio>
+                    </div>
+                `;
+            }
+            if (msg.attachment) {
+                bubbleHtml += `
+                    <div style="margin: 8px 0 4px 0; text-align: left;">
+                        <a href="${msg.attachment}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; text-decoration:underline; font-weight:500;">
+                            <span class="material-icons" style="font-size:16px;">attach_file</span> View Attachment Reference
+                        </a>
+                    </div>
+                `;
+            }
+            bubbleHtml += `<span class="msg-meta">${msg.created_at}</span></div>`;
+            html += bubbleHtml;
+        });
+        
+        messagesBox.innerHTML = html;
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    // Handle form submission via AJAX
+    const chatForm = document.getElementById('chat-form');
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(chatForm);
+        const submitBtn = chatForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        
+        fetch(chatForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => {
+            if (res.ok) {
+                document.getElementById('chat-text-input').value = "";
+                clearChatUploads();
+                fetchMessages();
+            } else {
+                alert("Error sending message.");
+            }
+        })
+        .catch(err => console.error("Error sending message:", err))
+        .finally(() => {
+            submitBtn.disabled = false;
+        });
+    });
+
+    function updateFileIndicator(input) {
+        if(input.files && input.files.length > 0) {
+            document.getElementById('chat-uploads-indicator').style.display = 'flex';
+            document.getElementById('chat-uploads-text').innerText = "Attachment: " + input.files[0].name;
+        }
+    }
+    
+    function clearChatUploads() {
+        document.getElementById('chat-file-input').value = "";
+        document.getElementById('chat-voice-file-input').value = "";
+        document.getElementById('chat-uploads-indicator').style.display = 'none';
+        document.getElementById('chat-mic-icon').innerText = 'mic';
+        document.getElementById('chat-mic-btn').style.background = 'rgba(255,255,255,0.05)';
+    }
+
+    const chatMicBtn = document.getElementById('chat-mic-btn');
+    const chatMicIcon = document.getElementById('chat-mic-icon');
+    const chatVoiceFileInput = document.getElementById('chat-voice-file-input');
+    
+    let chatRecorder;
+    let chatChunks = [];
+    let chatRecording = false;
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        chatMicBtn.addEventListener('click', function() {
+            if (!chatRecording) {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    chatRecorder = new MediaRecorder(stream);
+                    chatChunks = [];
+                    
+                    chatRecorder.ondataavailable = e => chatChunks.push(e.data);
+                    
+                    chatRecorder.onstop = () => {
+                        const blob = new Blob(chatChunks, { type: 'audio/mp3' });
+                        const file = new File([blob], "chat_voice.mp3", {type: "audio/mp3"});
+                        const trans = new DataTransfer();
+                        trans.items.add(file);
+                        chatVoiceFileInput.files = trans.files;
+                        
+                        document.getElementById('chat-uploads-indicator').style.display = 'flex';
+                        document.getElementById('chat-uploads-text').innerText = "Voice Note Attached (Temporary)";
+                    };
+                    
+                    chatRecorder.start();
+                    chatRecording = true;
+                    chatMicIcon.innerText = "stop";
+                    chatMicBtn.style.background = "#e74c3c";
+                })
+                .catch(err => {
+                    console.error("Mic access blocked:", err);
+                    alert("Allow microphone access to record sound directions.");
+                });
+            } else {
+                chatRecorder.stop();
+                chatRecorder.stream.getTracks().forEach(track => track.stop());
+                chatRecording = false;
+                chatMicIcon.innerText = "mic";
+                chatMicBtn.style.background = "rgba(46, 204, 113, 0.15)";
+            }
+        });
+    }
+    
+    // Initial fetch and poll
+    fetchMessages();
+    setInterval(fetchMessages, 3000);
+</script>
+{% endblock %}

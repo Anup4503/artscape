@@ -1,0 +1,238 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Complete Payment | Art-Scape Studio{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-box {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 40px;
+        text-align: center;
+    }
+    
+    .payment-icon {
+        font-size: 64px;
+        color: var(--primary);
+        margin-bottom: 24px;
+    }
+    
+    .pay-details-table {
+        width: 100%;
+        margin: 30px 0;
+        border-collapse: collapse;
+    }
+    
+    .pay-details-table td {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+    }
+    
+    .pay-details-table td:first-child {
+        color: var(--text-sub);
+        text-align: left;
+    }
+    
+    .pay-details-table td:last-child {
+        font-weight: 600;
+        text-align: right;
+        color: #ffffff;
+    }
+    
+    .or-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 30px 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .or-divider::before, .or-divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .or-divider:not(:empty)::before {
+        margin-right: .5em;
+    }
+    
+    .or-divider:not(:empty)::after {
+        margin-left: .5em;
+    }
+    
+    .mock-panel {
+        background: rgba(242, 168, 76, 0.03);
+        border: 1px dashed rgba(242, 168, 76, 0.2);
+        padding: 24px;
+        border-radius: 12px;
+        margin-top: 10px;
+    }
+    
+    .loading-pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        animation: loading-dot 1.4s infinite ease-in-out both;
+        margin: 0 2px;
+    }
+    .loading-pulse:nth-child(2) { animation-delay: 0.2s; }
+    .loading-pulse:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes loading-dot {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-box glass-panel">
+    <span class="material-icons payment-icon">account_balance_wallet</span>
+    <h2>Order Awaiting Payment</h2>
+    <p style="color: var(--text-sub); margin-top: 8px;">Order reference ID: <strong>#{{ order.id }}</strong></p>
+    
+    <table class="pay-details-table">
+        <tr>
+            <td>Customer Name</td>
+            <td>{{ order.name }}</td>
+        </tr>
+        <tr>
+            <td>Contact Mobile</td>
+            <td>{{ order.phone }}</td>
+        </tr>
+        <tr>
+            <td>Delivery Location</td>
+            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ order.address }}</td>
+        </tr>
+        <tr>
+            <td>Total Payable</td>
+            <td style="color: var(--primary); font-size: 20px; font-weight: 700;">₹{{ order.total_amount }}</td>
+        </tr>
+    </table>
+    
+    <!-- Active UPI Payment Action -->
+    <div style="margin: 20px 0; text-align: center;">
+        <p style="font-size: 14px; color: var(--text-sub); margin-bottom: 15px;">Scan the QR code below to pay with any UPI app</p>
+        
+        <!-- QR Code container -->
+        <div style="display: inline-block; padding: 15px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 20px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=0f1319&data={{ upi_link|urlencode }}" alt="UPI QR Code" style="display: block; width: 220px; height: 220px;">
+        </div>
+        
+        <!-- UPI ID copy widget -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 14px;">
+            <span style="color: var(--text-muted);">UPI ID:</span>
+            <strong style="color: #ffffff; font-family: monospace;">{{ upi_id }}</strong>
+            <button type="button" onclick="navigator.clipboard.writeText('{{ upi_id }}'); alert('UPI ID copied!');" style="background: none; border: none; color: var(--primary); cursor: pointer; display: flex; align-items: center;" title="Copy UPI ID">
+                <span class="material-icons" style="font-size: 16px;">content_copy</span>
+            </button>
+        </div>
+    </div>
+    
+    <div class="form-group" style="text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+        <label class="form-label" for="upi-utr-input">
+            ENTER UPI TRANSACTION ID / UTR
+        </label>
+        <input type="text" id="upi-utr-input" class="form-input" placeholder="e.g. 628392019485" style="width: 100%; box-sizing: border-box; font-family: monospace; letter-spacing: 1px;" maxlength="20" required>
+        <p style="font-size: 11px; color: var(--text-muted);">
+            Enter the 12-digit transaction ID or UTR number shown in your UPI app after successful payment.
+        </p>
+    </div>
+    
+    <button id="submit-upi-btn" class="glow-btn" style="width: 100%; padding: 14px; font-size: 16px; margin-bottom: 15px;">
+        Submit UPI Transaction ID <span class="material-icons">check_circle</span>
+    </button>
+    
+    <!-- Local Developer Mock Payment Gateway Simulator (UPI/Success representation) -->
+    <div class="or-divider">LOCAL TESTING MODE</div>
+    
+    <div class="mock-panel">
+        <h4 style="margin-bottom: 8px; color: var(--primary);">Developer Sandbox Controls</h4>
+        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 20px;">
+            Since you are testing on localhost without live credentials, use this simulator button to instantly mark this purchase as Paid.
+        </p>
+        <button type="button" id="mock-success-btn" class="glow-btn-secondary" style="width: 100%; border-color: rgba(46, 204, 113, 0.3); color: #2ecc71; background: rgba(46, 204, 113, 0.05); padding: 12px;">
+            Simulate Payment Success (Local Mock)
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Verification dispatcher
+    function submitUpiTransaction(isMock) {
+        let utr = '';
+        if (!isMock) {
+            utr = document.getElementById('upi-utr-input').value.trim();
+            if (!utr) {
+                alert("Please enter your UPI transaction ID.");
+                return;
+            }
+            if (!/^[a-zA-Z0-9]{8,20}$/.test(utr)) {
+                alert("Please enter a valid UPI Transaction ID / UTR (8 to 20 alphanumeric characters).");
+                return;
+            }
+        }
+
+        document.querySelector('.payment-box').innerHTML = `
+            <div style="padding: 40px 0;">
+                <div style="display:flex; justify-content:center; margin-bottom: 20px;">
+                    <div class="loading-pulse"></div>
+                    <div class="loading-pulse"></div>
+                    <div class="loading-pulse"></div>
+                </div>
+                <h3>Verifying Transaction Status</h3>
+                <p style="color: var(--text-sub); margin-top:8px; font-size:14px;">Securing record details. Please do not close or refresh this tab.</p>
+            </div>
+        `;
+        
+        const csrfToken = '{{ csrf_token }}';
+        const formData = new URLSearchParams();
+        formData.append('upi_transaction_id', utr);
+        formData.append('local_order_id', '{{ order.id }}');
+        formData.append('is_mock', isMock ? 'true' : 'false');
+        
+        fetch("{% url 'payment_verify' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData.toString()
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.verified) {
+                window.location.href = "{% url 'order_success' order.id %}";
+            } else {
+                alert("Payment verification failed: " + (data.error || "Unknown Error"));
+                window.location.reload();
+            }
+        })
+        .catch(err => {
+            console.error("Verification error:", err);
+            alert("Network connection error. Refresh the page to try again.");
+            window.location.reload();
+        });
+    }
+
+    // Submit button handler
+    document.getElementById('submit-upi-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        submitUpiTransaction(false);
+    });
+
+    // Mock handler
+    document.getElementById('mock-success-btn').addEventListener('click', function() {
+        submitUpiTransaction(true);
+    });
+</script>
+{% endblock %}

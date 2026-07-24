@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill/Invoice Order #{{ order.id }} | Art-Scape Studio</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        
+        .invoice-card {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            padding: 40px;
+            border-radius: 8px;
+        }
+        
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #5a5a5a;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f1319;
+        }
+        
+        .logo span {
+            color: #f2aa4c;
+        }
+        
+        .invoice-title {
+            text-align: right;
+        }
+        
+        .invoice-title h1 {
+            margin: 0 0 5x 0;
+            font-size: 28px;
+            color: #0f1319;
+            text-transform: uppercase;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .details-box h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #666;
+        }
+        
+        p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+        
+        table.items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        table.items-table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+            text-transform: uppercase;
+            color: #555;
+        }
+        
+        table.items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+        }
+        
+        .total-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
+        }
+        
+        .total-table {
+            width: 250px;
+        }
+        
+        .total-table td {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .total-table tr.grand-total td {
+            font-size: 18px;
+            font-weight: 700;
+            border-top: 2px solid #0f1319;
+            color: #0f1319;
+        }
+        
+        .footer {
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            .invoice-card {
+                border: none;
+                padding: 0;
+            }
+            .print-btn {
+                display: none;
+            }
+        }
+        
+        .print-btn {
+            background-color: #0f1319;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            transition: opacity 0.2s;
+        }
+        .print-btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="max-width: 800px; margin: 0 auto; text-align: right;">
+        <button class="print-btn" onclick="window.print()">Print This Invoice</button>
+    </div>
+
+    <div class="invoice-card">
+        <div class="header-row">
+            <div class="logo">
+                Art-Scape <span>STUDIO</span>
+                <p style="font-size:12px; font-weight:normal; color:#888; margin-top:5px;">Handmade resin, acrylic & custom structures</p>
+            </div>
+            <div class="invoice-title">
+                <h1>Invoice</h1>
+                <p>Order ID: <strong>#{{ order.id }}</strong></p>
+                <p>Date: {{ order.created_at|date:"d M Y" }}</p>
+            </div>
+        </div>
+        
+        <div class="details-grid">
+            <div class="details-box">
+                <h3>Billed To</h3>
+                <p><strong>{{ order.name }}</strong></p>
+                <p>{{ order.phone }}</p>
+                <p>{{ order.email }}</p>
+                <p>{{ order.address }}</p>
+            </div>
+            <div class="details-box">
+                <h3>Order Status</h3>
+                <p>Payment Mode: <strong>{{ order.payment_method }}</strong></p>
+                {% if order.upi_transaction_id %}
+                    <p>Transaction / UTR: <code>{{ order.upi_transaction_id }}</code></p>
+                {% endif %}
+                <p>Payment Clear Status: <strong>{{ order.payment_status }}</strong></p>
+                <p>Production / Ship Stage: <strong>{{ order.status }}</strong></p>
+            </div>
+        </div>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Item Description</th>
+                    <th style="text-align: right;">Unit Price</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Total Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td style="text-align: right;">₹{{ item.price }}</td>
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td style="text-align: right;">₹{{ item.get_total_price }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="total-box">
+            <table class="total-table">
+                <tr>
+                    <td>Subtotal:</td>
+                    <td style="text-align: right;">₹{{ order.total_amount }}</td>
+                </tr>
+                <tr>
+                    <td>Tax / Shipping:</td>
+                    <td style="text-align: right;">₹0.00</td>
+                </tr>
+                <tr class="grand-total">
+                    <td>Grand Total:</td>
+                    <td style="text-align: right;">₹{{ order.total_amount }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        {% if order.custom_text %}
+            <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #f2aa4c; margin-bottom: 40px; border-radius:0 4px 4px 0;">
+                <p style="margin: 0; font-size:12px; text-transform:uppercase; color:#888; font-weight:600;">Customized Request Instructions</p>
+                <p style="margin-top: 5px; font-style: italic; font-size: 13px; color:#555;">"{{ order.custom_text }}"</p>
+            </div>
+        {% endif %}
+        
+        <div class="footer">
+            <p>Thank you for buying from Art-Scape Studio! Your support means the world to our creative studio.</p>
+            <p style="font-size:10px; margin-top:10px; color:#aaa;">This is a system generated print-bill layout for Art-Scape Studio digital transactions.</p>
+        </div>
+    </div>
+
+</body>
+</html>
