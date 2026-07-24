@@ -54,6 +54,20 @@
         margin-bottom: 30px;
     }
     
+    /* Product row style */
+    .product-row {
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+    }
+    .product-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
     /* Drag & Drop Visual zone styling */
     .upload-dropzone {
         border: 2px dashed rgba(255, 255, 255, 0.15);
@@ -284,6 +298,49 @@
                 </div>
             {% else %}
                 <p style="color:var(--text-sub); text-align:center; padding:20px;">No purchase orders placed yet.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Product Catalog Management -->
+        <div class="log-panel glass-panel" style="margin-bottom:40px;">
+            <h3 style="border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:20px; color:#ffffff;">Manage Product Catalog</h3>
+            
+            {% if products %}
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    {% for product in products %}
+                        <div class="product-row">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div>
+                                    <h4 style="font-size:15px; color:#ffffff; margin: 0;">{{ product.name }}</h4>
+                                    <p style="font-size:12px; color:var(--text-sub); margin: 4px 0 0 0;">
+                                        Category: {{ product.get_category_display }} | Price: ₹{{ product.price }}
+                                        {% if not product.available %}
+                                            <span style="color: #e74c3c; font-weight: 600; margin-left: 8px;">[Unavailable]</span>
+                                        {% else %}
+                                            <span style="color: #2ecc71; font-weight: 600; margin-left: 8px;">[Available]</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <a href="{% url 'admin_edit_product' product.id %}" class="glow-btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; text-decoration: none; color: var(--primary); border: 1px solid var(--primary); background: rgba(242, 168, 76, 0.05); display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="material-icons" style="font-size:16px;">edit</span> Edit
+                                </a>
+                                
+                                <form action="{% url 'admin_delete_product' product.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete \'{{ product.name|escapejs }}\'?');" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="glow-btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.5); background: rgba(231, 76, 60, 0.05); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span class="material-icons" style="font-size:16px;">delete</span> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color:var(--text-sub); text-align:center; padding:20px;">No products in the catalog yet.</p>
             {% endif %}
         </div>
         
