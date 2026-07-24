@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -164,11 +165,11 @@
         <button class="print-btn" onclick="window.print()">Print This Invoice</button>
     </div>
 
-    <div class="invoice-card">
-        <div class="header-row">
-            <div class="logo">
-                <img src="{% static 'shop/images/logo.jpeg' %}" alt="Art-Scape Logo" style="height: 60px; width: auto; object-fit: contain;">
-            </div>
+    <div class="header-row">
+        <div class="logo">
+            <img src="{% static 'shop/images/logo.jpeg' %}" alt="Art-Scape Studio" style="height: 50px;">
+            <p style="font-size:12px; font-weight:normal; color:#888; margin-top:5px;">Handmade resin, acrylic & custom structures</p>
+        </div>
 
             <div class="invoice-title">
                 <h1>Invoice</h1>
